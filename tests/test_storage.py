@@ -33,6 +33,14 @@ class StorageTests(unittest.TestCase):
             self.assertEqual(json.loads(contents), state)
             self.assertIn('  "a"', contents)
 
+    def test_load_state_raises_for_invalid_json(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "state.json"
+            path.write_text("{invalid json}\n", encoding="utf-8")
+
+            with self.assertRaises(json.JSONDecodeError):
+                load_state(path)
+
 
 if __name__ == "__main__":
     unittest.main()
