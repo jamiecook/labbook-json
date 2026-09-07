@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Iterator, MutableMapping, Sequence
+from collections.abc import Iterator, MutableMapping
 from dataclasses import asdict, is_dataclass
 from pathlib import Path
 from typing import Any, Generic, Protocol, TypeVar, Union
-from typing import Sequence as Seq
+from typing import Sequence
 
 T = TypeVar("T")
 ModelT_co = TypeVar("ModelT_co", covariant=True)
@@ -16,7 +16,17 @@ class ModelValidator(Protocol[ModelT_co]):
     def model_validate(cls, data: dict[str, Any]) -> ModelT_co: ...
 
 
-def persist_model(state_file: Path, state_class: ModelValidator[T], sub_key: KeyPath = None) -> PersistentModel[T]:
+def persist_state(state_file: Path, sub_key: KeyPath = None) -> "PersistentState":
+    """Return a dict-like state object backed by ``state_file`` that persists on every mutation.
+
+    ``sub_key`` may be ``None`` (whole file), a single key, a dotted path (``"a.b.c"``), or an
+    explicit sequence of steps where each step is a dict key (``str``), a list index (``int``),
+    or a ``(field, value)`` tuple selecting the list element whose ``element[field] == value``.
+    """
+    return PersistentState(state_file, sub_key=sub_key)
+
+
+def persist_model(state_file: Path, state_class: ModelValidator[T], sub_key: KeyPath = None) -> "PersistentModel[T]":
     """Load ``state_class`` from ``state_file`` and persist it on every attribute assignment.
 
     ``state_class`` must be a pydantic ``BaseModel``. Returns a transparent proxy that behaves
@@ -40,8 +50,8 @@ KeyStep = Union[str, int, tuple[str, Any]]
 # A key path addressing a node deep in a JSON document.
 #   None -> the whole document (root)
 #   str  -> a single dict key, or a dotted path like "tasks.metadata.stage_config"
-#   Seq  -> an explicit list of KeySteps
-KeyPath = Union[None, str, Seq[KeyStep]]
+#   Sequence  -> an explicit list of KeySteps
+KeyPath = Union[None, str, Sequence[KeyStep]]
 
 
 class NoMatchingElement(KeyError):
@@ -50,10 +60,6 @@ class NoMatchingElement(KeyError):
     Distinct from a plain missing dict key: a match miss is always an error and is never
     silently treated as "empty node" when reading.
     """
-
-
-# def state_file_for_task(task: dict[str, Any]) -> Path:
-#     return Path(first_and_only(task["targets"])).with_suffix(".state.json")
 
 
 def _normalize_key_path(sub_key: KeyPath) -> list[KeyStep]:
@@ -231,16 +237,6 @@ class PersistentState(_WriteThroughDict):
 
     def __repr__(self) -> str:
         return f"PersistentState({self._data!r}, file={self.state_file}, sub_key={self.sub_key!r})"
-
-
-def persist_state(state_file: Path, sub_key: KeyPath = None) -> PersistentState:
-    """Return a dict-like state object backed by ``state_file`` that persists on every mutation.
-
-    ``sub_key`` may be ``None`` (whole file), a single key, a dotted path (``"a.b.c"``), or an
-    explicit sequence of steps where each step is a dict key (``str``), a list index (``int``),
-    or a ``(field, value)`` tuple selecting the list element whose ``element[field] == value``.
-    """
-    return PersistentState(state_file, sub_key=sub_key)
 
 
 class PersistentModel(Generic[T]):
