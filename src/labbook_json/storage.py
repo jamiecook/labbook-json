@@ -35,7 +35,7 @@ def save_state(path: str | Path, state: Any, *, indent: int = 2, sort_keys: bool
             output_file.write("\n")
             output_file.flush()
             os.fsync(output_file.fileno())
-        temp_path.replace(output_path)
+        os.replace(temp_path, output_path)
     except Exception:
         temp_path.unlink(missing_ok=True)
         raise
