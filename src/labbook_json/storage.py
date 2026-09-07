@@ -13,10 +13,9 @@ def save_state(path: str | Path, state: Any, *, indent: int = 2, sort_keys: bool
     """
     output_path = Path(path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(
-        json.dumps(state, indent=indent, sort_keys=sort_keys) + "\n",
-        encoding="utf-8",
-    )
+    with output_path.open("w", encoding="utf-8") as output_file:
+        json.dump(state, output_file, indent=indent, sort_keys=sort_keys)
+        output_file.write("\n")
 
 
 def load_state(path: str | Path) -> Any:
