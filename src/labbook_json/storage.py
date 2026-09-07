@@ -14,7 +14,14 @@ def save_state(path: str | Path, state: Any, *, indent: int = 2, sort_keys: bool
     output_path = Path(path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open("w", encoding="utf-8") as output_file:
-        json.dump(state, output_file, indent=indent, sort_keys=sort_keys, ensure_ascii=False)
+        json.dump(
+            state,
+            output_file,
+            indent=indent,
+            sort_keys=sort_keys,
+            ensure_ascii=False,
+            allow_nan=False,
+        )
         output_file.write("\n")
 
 

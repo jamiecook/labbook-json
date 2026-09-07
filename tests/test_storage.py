@@ -33,6 +33,8 @@ class StorageTests(unittest.TestCase):
             self.assertEqual(json.loads(contents), state)
             self.assertIn('  "a"', contents)
             self.assertIn("café", contents)
+            self.assertLess(contents.index('"a"'), contents.index('"title"'))
+            self.assertLess(contents.index('"title"'), contents.index('"z"'))
 
     def test_load_state_raises_for_invalid_json(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -41,6 +43,13 @@ class StorageTests(unittest.TestCase):
 
             with self.assertRaises(json.JSONDecodeError):
                 load_state(path)
+
+    def test_save_state_rejects_non_json_float_values(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "state.json"
+
+            with self.assertRaises(ValueError):
+                save_state(path, {"value": float("nan")})
 
 
 if __name__ == "__main__":
