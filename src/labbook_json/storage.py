@@ -20,4 +20,5 @@ def save_state(path: str | Path, state: Any, *, indent: int = 2, sort_keys: bool
 
 def load_state(path: str | Path) -> Any:
     """Load and parse a UTF-8 JSON state file."""
-    return json.loads(Path(path).read_text(encoding="utf-8"))
+    with Path(path).open("r", encoding="utf-8") as input_file:
+        return json.load(input_file)
