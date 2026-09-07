@@ -33,5 +33,23 @@ classifiers = [
 Homepage = "https://github.com/jamiecook/labbook-json"
 Repository = "https://github.com/jamiecook/labbook-json"
 
+[project.optional-dependencies]
+dev = [
+  "pydantic>=2",
+  "pytest>=8",
+  "ruff>=0.16.6",
+  "ty>=0.0.78",
+]
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/labbook_json"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["B", "C", "E", "F", "W"]
+
+[tool.ty.src]
+include = ["src"]
