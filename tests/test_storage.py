@@ -1,0 +1,38 @@
+from __future__ import annotations
+
+import json
+import tempfile
+import unittest
+from pathlib import Path
+
+from labbook_json import load_state, save_state
+
+
+class StorageTests(unittest.TestCase):
+    def test_save_and_load_state_round_trip(self) -> None:
+        state = {"trial": 1, "metrics": {"loss": 0.1}, "tags": ["baseline"]}
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "runs" / "state.json"
+
+            save_state(path, state)
+
+            self.assertEqual(load_state(path), state)
+
+    def test_save_state_uses_human_readable_json(self) -> None:
+        state = {"z": 1, "a": {"value": True}}
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "state.json"
+
+            save_state(path, state)
+
+            contents = path.read_text(encoding="utf-8")
+
+            self.assertTrue(contents.endswith("\n"))
+            self.assertEqual(json.loads(contents), state)
+            self.assertIn('  "a"', contents)
+
+
+if __name__ == "__main__":
+    unittest.main()
