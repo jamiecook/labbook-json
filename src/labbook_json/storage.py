@@ -5,8 +5,7 @@ from collections.abc import Iterator, MutableMapping, Sequence
 from dataclasses import asdict, is_dataclass
 from pathlib import Path
 from typing import Any, Generic, Protocol, TypeVar, Union
-
-# from polaris.utils.list_utils import first_and_only
+from typing import Sequence as Seq
 
 T = TypeVar("T")
 ModelT_co = TypeVar("ModelT_co", covariant=True)
@@ -17,17 +16,32 @@ class ModelValidator(Protocol[ModelT_co]):
     def model_validate(cls, data: dict[str, Any]) -> ModelT_co: ...
 
 
+def persist_model(state_file: Path, state_class: ModelValidator[T], sub_key: KeyPath = None) -> PersistentModel[T]:
+    """Load ``state_class`` from ``state_file`` and persist it on every attribute assignment.
+
+    ``state_class`` must be a pydantic ``BaseModel``. Returns a transparent proxy that behaves
+    like the model but re-writes ``state_file`` whenever a field is set. ``sub_key`` accepts the
+    same forms as :func:`persist_state` (``None``, a key, a dotted path, or a sequence of steps
+    including list indices and ``(field, value)`` match tuples).
+    """
+    raw_state = _read_state_file(state_file, sub_key=sub_key)
+    model = state_class.model_validate(raw_state)
+    proxy = PersistentModel(state_file, sub_key, model)
+    proxy._flush()
+    return proxy
+
+
 # A single step in a key path:
 #   str                -> dict key
 #   int                -> list index
 #   (key, value) tuple -> the list element whose element[key] == value (match by field)
-KeyStep = Union[str, int, "tuple[str, Any]"]
+KeyStep = Union[str, int, tuple[str, Any]]
 
 # A key path addressing a node deep in a JSON document.
-#   None      -> the whole document (root)
-#   str       -> a single dict key, or a dotted path like "tasks.metadata.stage_config"
-#   Sequence  -> an explicit list of KeySteps
-KeyPath = Union[None, str, "Sequence[KeyStep]"]
+#   None -> the whole document (root)
+#   str  -> a single dict key, or a dotted path like "tasks.metadata.stage_config"
+#   Seq  -> an explicit list of KeySteps
+KeyPath = Union[None, str, Seq[KeyStep]]
 
 
 class NoMatchingElement(KeyError):
@@ -263,18 +277,3 @@ class PersistentModel(Generic[T]):
 
     def __repr__(self) -> str:
         return f"PersistentModel({self._model!r}, file={self._state_file}, sub_key={self._sub_key!r})"
-
-
-def persist_model(state_file: Path, state_class: ModelValidator[T], sub_key: KeyPath = None) -> PersistentModel[T]:
-    """Load ``state_class`` from ``state_file`` and persist it on every attribute assignment.
-
-    ``state_class`` must be a pydantic ``BaseModel``. Returns a transparent proxy that behaves
-    like the model but re-writes ``state_file`` whenever a field is set. ``sub_key`` accepts the
-    same forms as :func:`persist_state` (``None``, a key, a dotted path, or a sequence of steps
-    including list indices and ``(field, value)`` match tuples).
-    """
-    raw_state = _read_state_file(state_file, sub_key=sub_key)
-    model = state_class.model_validate(raw_state)
-    proxy = PersistentModel(state_file, sub_key, model)
-    proxy._flush()
-    return proxy
