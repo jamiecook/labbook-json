@@ -20,7 +20,7 @@ class StorageTests(unittest.TestCase):
             self.assertEqual(load_state(path), state)
 
     def test_save_state_uses_human_readable_json(self) -> None:
-        state = {"z": 1, "a": {"value": True}}
+        state = {"z": 1, "a": {"value": True}, "title": "café"}
 
         with tempfile.TemporaryDirectory() as temp_dir:
             path = Path(temp_dir) / "state.json"
@@ -32,6 +32,7 @@ class StorageTests(unittest.TestCase):
             self.assertTrue(contents.endswith("\n"))
             self.assertEqual(json.loads(contents), state)
             self.assertIn('  "a"', contents)
+            self.assertIn("café", contents)
 
     def test_load_state_raises_for_invalid_json(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
