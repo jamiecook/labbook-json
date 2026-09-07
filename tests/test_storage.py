@@ -51,6 +51,16 @@ class StorageTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 save_state(path, {"value": float("nan")})
 
+    def test_save_state_leaves_existing_file_unchanged_on_failure(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "state.json"
+            save_state(path, {"status": "original"})
+
+            with self.assertRaises(ValueError):
+                save_state(path, {"value": float("nan")})
+
+            self.assertEqual(load_state(path), {"status": "original"})
+
 
 if __name__ == "__main__":
     unittest.main()
