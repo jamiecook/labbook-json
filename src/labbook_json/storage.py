@@ -74,6 +74,8 @@ def _describe_path(steps: Sequence[KeyStep]) -> str:
     return "".join(f"[{s[0]}={s[1]!r}]" if isinstance(s, tuple) else f"[{s!r}]" for s in steps) or "<root>"
 
 
+# This attempts to match a (field, value) tuple against elements in a list, returning the index of the matching element,
+# where matching is defined as element[key] == value. Raises NoMatchingElement if no match is found.
 def _match_index(container: list, step: tuple[str, Any], steps_so_far: Sequence[KeyStep], state_file: Path) -> int:
     key, value = step
     for i, element in enumerate(container):
